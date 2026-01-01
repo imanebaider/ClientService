@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from entity.Client import Client
 from config.security import require_role
-
+from flask import g
 # ----------------- App & DB Config -----------------
 app = Flask(__name__)
 
@@ -49,7 +49,6 @@ client_model = ns.model('Client', {
     'nom': fields.String(required=True),
     'prenom': fields.String(required=True),
     'email': fields.String(required=True),
-    'password': fields.String(required=True),
     'age': fields.Integer(),
     'photo_carte_identity': fields.String(),
     'reservation_ids': fields.List(fields.Integer)
@@ -63,7 +62,7 @@ class ClientList(Resource):
     @ns.marshal_list_with(client_model)
     @ns.doc(security='Bearer Auth')
     def get(self):
-        """Lister tous les clients (ADMIN uniquement)"""
+        """Lister tous les clients """
         clients_entities = db_session.query(Client).all()
         clients = [entity_to_dto(c).to_dict() for c in clients_entities]
         return clients
@@ -78,39 +77,49 @@ class ClientList(Resource):
         client = client_service.add_client(dto)
         return client.to_dict(), 201
 
-@ns.route('/<int:id>')
-class ClientResource(Resource):
 
-    @require_role("CLIENT", "ADMIN")
+
+
+
+
+@ns.route('/me')
+class ClientMe(Resource):
+
+    @require_role("CLIENT")
     @ns.marshal_with(client_model)
-    @ns.doc(security='Bearer Auth')
-    def get(self, id):
-        """Récupérer un client par ID (CLIENT ou ADMIN)"""
-        client = client_service.get_client(id)
-        if client:
-            return client.to_dict()
-        ns.abort(404, "Client non trouvé")
+    def get(self):
 
-    @require_role("CLIENT", "ADMIN")
+        user = g.user  # JWT decoded
+
+        client_id = user["userId"]
+        nom = user.get("nom", "Inconnu")
+        prenom = user.get("prenom", "Inconnu")
+        email = user.get("email")
+
+        try:
+            client = client_service.get_by_id(client_id)
+        except Exception:
+            client = client_service.create_from_token(
+                client_id, nom, prenom, email
+            )
+
+        return client
+
+@ns.route('/update')
+class ClientMe(Resource):
+
+    @require_role("CLIENT")
     @ns.expect(client_model)
     @ns.marshal_with(client_model)
-    @ns.doc(security='Bearer Auth')
-    def put(self, id):
-        """Mettre à jour un client (CLIENT ou ADMIN)"""
+    def put(self):
+        user = g.user  # decoded JWT
+        client_id = user["userId"]
         data = request.json
-        updated_client = client_service.update_client(id, data)
-        if updated_client:
-            return updated_client.to_dict()
-        ns.abort(404, "Client non trouvé")
+        updated_client = client_service.update_client(client_id, data)
+        if not updated_client:
+            ns.abort(404, "Client non trouvé")
 
-    @require_role("CLIENT", "ADMIN")
-    @ns.doc(security='Bearer Auth')
-    def delete(self, id):
-        """Supprimer un client par ID (CLIENT ou ADMIN)"""
-        success = client_service.delete_client(id)
-        if success:
-            return {"message": f"Client avec id {id} supprimé"}, 200
-        ns.abort(404, "Client non trouvé")
+        return updated_client.to_dict()
 
 # ----------------- Main -----------------
 if __name__ == "__main__":

@@ -1,26 +1,21 @@
 import jwt
 from functools import wraps
-from flask import request
+from flask import request, g
 
 PUBLIC_KEY_PATH = "keys/publickey.pem"
 ALGORITHM = "RS256"
-
 
 def load_public_key():
     with open(PUBLIC_KEY_PATH, "r") as f:
         return f.read()
 
-
 PUBLIC_KEY = load_public_key()
-
 
 def require_role(*allowed_roles):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-
             auth_header = request.headers.get("Authorization")
-
             if not auth_header or not auth_header.startswith("Bearer "):
                 return {"message": "Token manquant"}, 401
 
@@ -32,8 +27,11 @@ def require_role(*allowed_roles):
                     PUBLIC_KEY,
                     algorithms=[ALGORITHM]
                 )
-                roles = payload.get("roles", [])
 
+                # ⚠ Ici on sauvegarde le payload dans g.user
+                g.user = payload
+
+                roles = payload.get("roles", [])
                 if not roles:
                     return {"message": "Aucun rôle trouvé dans le token"}, 403
 
@@ -50,6 +48,5 @@ def require_role(*allowed_roles):
                 return {"message": f"Token invalide: {str(e)}"}, 401
 
             return func(*args, **kwargs)
-
         return wrapper
     return decorator

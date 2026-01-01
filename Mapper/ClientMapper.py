@@ -7,8 +7,7 @@ def dto_to_entity(dto: RequestDtoClient) -> Client:
         cni=dto.cni,
         nom=dto.nom,
         prenom=dto.prenom,
-        email=dto.email,
-        password=dto.password,
+        #email=dto.email,
         age=dto.age,
         photo_carte_identity=dto.photo_carte_identity
     )
@@ -20,7 +19,6 @@ def entity_to_dto(entity: Client) -> ResponseDtoClient:
         nom=entity.nom,
         prenom=entity.prenom,
         email=entity.email,
-        password=entity.password,
         age=entity.age,
         photo_carte_identity=entity.photo_carte_identity
     )
