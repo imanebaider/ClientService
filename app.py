@@ -19,4 +19,4 @@ api = Api(app, version="1.0", title="Client API", description="API gestion des c
 api.add_namespace(ns, path='/clients')
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8088)
+    app.run(debug=True, port=8089)

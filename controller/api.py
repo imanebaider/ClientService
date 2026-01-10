@@ -51,7 +51,7 @@ client_model = ns.model('Client', {
     'email': fields.String(required=True),
     'age': fields.Integer(),
     'photo_carte_identity': fields.String(),
-    'reservation_ids': fields.List(fields.Integer)
+    #'reservation_ids': fields.List(fields.Integer)
 })
 
 # ----------------- Routes -----------------
@@ -121,6 +121,25 @@ class ClientMe(Resource):
 
         return updated_client.to_dict()
 
+
+
+@ns.route('/<int:id>')
+class ClientById(Resource):
+
+    @require_role("ADMIN", "MANAGER","CLIENT")
+    @ns.marshal_with(client_model)
+    @ns.doc(security='Bearer Auth')
+    def get(self, id):
+        """Récupérer un client par ID (ADMIN / MANAGER)"""
+
+        client = client_service.get_by_id(id)
+
+        if not client:
+            ns.abort(404, "Client non trouvé")
+
+        client_dto = entity_to_dto(client)
+        return client_dto.to_dict()
+
 # ----------------- Main -----------------
 if __name__ == "__main__":
-    app.run(debug=True, port=8088)
+    app.run(debug=True, port=8089)

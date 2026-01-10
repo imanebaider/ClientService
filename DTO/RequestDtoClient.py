@@ -21,5 +21,5 @@ class RequestDtoClient:
             #email=data.get("email"),
             age=data.get("age"),
             photo_carte_identity=data.get("photo_carte_identity"),
-            reservation_ids=data.get("reservation_ids", []),
+           # reservation_ids=data.get("reservation_ids", []),
         )
