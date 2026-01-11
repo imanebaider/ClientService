@@ -12,4 +12,4 @@ class Client(Base):
     prenom = Column(String(100), nullable=False)
     email = Column(String(100), nullable=False)
     age = Column(Integer)
-    photo_carte_identity = Column(String(255), nullable=True)
+    photo_carte_identity = Column(String, nullable=True)
