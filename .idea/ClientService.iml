@@ -6,7 +6,11 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$" />
+<<<<<<< HEAD
     <orderEntry type="jdk" jdkName="Python 3.13" jdkType="Python SDK" />
+=======
+    <orderEntry type="jdk" jdkName="Python 3.13 (ChambreService)" jdkType="Python SDK" />
+>>>>>>> 551f9a8 (Ajout des attributs tel et dateNaissance)
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TemplatesService">

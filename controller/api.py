@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from entity.Client import Client
 from config.security import require_role
 from flask import g
+
 # ----------------- App & DB Config -----------------
 app = Flask(__name__)
 
@@ -36,22 +37,25 @@ api = Api(
     title="Client API",
     description="API gestion des clients",
     authorizations=authorizations,
-    security='Bearer Auth'  # default security for Swagger
+    security='Bearer Auth'
 )
 
 # ----------------- Namespace -----------------
 ns = Namespace('clients', description='Opérations sur les clients')
 api.add_namespace(ns, path='/clients')
 
+# ----------------- Swagger Model -----------------
 client_model = ns.model('Client', {
     'id': fields.Integer(readOnly=True),
     'cni': fields.String(required=True),
     'nom': fields.String(required=True),
     'prenom': fields.String(required=True),
     'email': fields.String(required=True),
+    'tel': fields.String(),
+    'dateNaissance': fields.Date(),
     'age': fields.Integer(),
     'photo_carte_identity': fields.String(),
-    #'reservation_ids': fields.List(fields.Integer)
+    'reservation_ids': fields.List(fields.Integer)
 })
 
 # ----------------- Routes -----------------
@@ -62,7 +66,6 @@ class ClientList(Resource):
     @ns.marshal_list_with(client_model)
     @ns.doc(security='Bearer Auth')
     def get(self):
-        """Lister tous les clients """
         clients_entities = db_session.query(Client).all()
         clients = [entity_to_dto(c).to_dict() for c in clients_entities]
         return clients
@@ -71,16 +74,10 @@ class ClientList(Resource):
     @ns.marshal_with(client_model, code=201)
     @ns.doc(security=[])
     def post(self):
-        """Ajouter un client (any visitor peut créer un compte)"""
         data = request.json
         dto = RequestDtoClient(**data)
         client = client_service.add_client(dto)
         return client.to_dict(), 201
-
-
-
-
-
 
 @ns.route('/me')
 class ClientMe(Resource):
@@ -88,40 +85,33 @@ class ClientMe(Resource):
     @require_role("CLIENT")
     @ns.marshal_with(client_model)
     def get(self):
-
-        user = g.user  # JWT decoded
-
+        user = g.user
         client_id = user["userId"]
         nom = user.get("nom", "Inconnu")
         prenom = user.get("prenom", "Inconnu")
         email = user.get("email")
 
         try:
-            client = client_service.get_by_id(client_id)
+            client_dto = client_service.get_by_id(client_id)
         except Exception:
-            client = client_service.create_from_token(
-                client_id, nom, prenom, email
-            )
+            client_dto = client_service.create_from_token(client_id, nom, prenom, email)
 
-        return client
+        return client_dto.to_dict()
 
 @ns.route('/update')
-class ClientMe(Resource):
+class ClientUpdate(Resource):
 
     @require_role("CLIENT")
     @ns.expect(client_model)
     @ns.marshal_with(client_model)
     def put(self):
-        user = g.user  # decoded JWT
+        user = g.user
         client_id = user["userId"]
         data = request.json
         updated_client = client_service.update_client(client_id, data)
         if not updated_client:
             ns.abort(404, "Client non trouvé")
-
         return updated_client.to_dict()
-
-
 
 @ns.route('/<int:id>')
 class ClientById(Resource):
@@ -130,16 +120,12 @@ class ClientById(Resource):
     @ns.marshal_with(client_model)
     @ns.doc(security='Bearer Auth')
     def get(self, id):
-        """Récupérer un client par ID (ADMIN / MANAGER)"""
-
         client = client_service.get_by_id(id)
-
         if not client:
             ns.abort(404, "Client non trouvé")
-
         client_dto = entity_to_dto(client)
         return client_dto.to_dict()
 
 # ----------------- Main -----------------
 if __name__ == "__main__":
-    app.run(debug=True, port=8089)
+    app.run(debug=True, port=8088)
