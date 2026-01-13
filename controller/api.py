@@ -63,9 +63,11 @@ client_model = ns.model('Client', {
 class ClientList(Resource):
 
     @require_role("ADMIN")
+    @require_role("RECEPTIONNISTE")
     @ns.marshal_list_with(client_model)
     @ns.doc(security='Bearer Auth')
     def get(self):
+        print("DEBUG g.user:", g.user)
         clients_entities = db_session.query(Client).all()
         clients = [entity_to_dto(c).to_dict() for c in clients_entities]
         return clients
@@ -116,7 +118,7 @@ class ClientUpdate(Resource):
 @ns.route('/<int:id>')
 class ClientById(Resource):
 
-    @require_role("ADMIN", "MANAGER","CLIENT")
+    @require_role("ADMIN", "CLIENT", "RECEPTIONNISTE")
     @ns.marshal_with(client_model)
     @ns.doc(security='Bearer Auth')
     def get(self, id):
